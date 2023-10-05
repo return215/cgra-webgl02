@@ -1,7 +1,7 @@
 import vertProgram from "./main.vert";
 import fragProgram from "./main.frag";
 import * as twgl from "twgl.js";
-import { deg2Rad, scaleToBottomLeft, showDecimalPoints } from "./utils";
+import { deg2Rad, convertCornerToCenter, showDecimalPoints } from "./utils";
 import { mat4, vec3 } from "gl-matrix";
 
 type ShaderType = WebGLRenderingContext["VERTEX_SHADER"] | WebGLRenderingContext["FRAGMENT_SHADER"];

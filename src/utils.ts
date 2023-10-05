@@ -1,5 +1,5 @@
-/** convert center clip space to bottom left */
-export const scaleToBottomLeft = (n: number) => (n * 2 - 1);
+/** convert bottom left corner space to center clip space */
+export const convertCornerToCenter = (n: number) => (n * 2 - 1);
 
 /** scale to 0-1 */
 export const rgbIntToScale = (n: number) => (n / 255);
