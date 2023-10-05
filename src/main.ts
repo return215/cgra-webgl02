@@ -91,9 +91,10 @@ function main(): void {
   // position
   const verts3D = [
     [4/8, 4/8, 7/8,],
-    [1/8, 1/8, 1/8,],
-    [7/8, 1/8, 1/8,],
-    [4/8, 7/8, 1/8,],
+    [1/8, 1/8, 4/8,],
+    [7/8, 1/8, 4/8,],
+    [4/8, 7/8, 4/8,],
+    [4/8, 4/8, 1/8,],
   ]
   const pos = new Float32Array([
     verts3D[0],
@@ -108,9 +109,17 @@ function main(): void {
     verts3D[3],
     verts3D[1],
 
+    verts3D[4],
     verts3D[1],
     verts3D[2],
+
+    verts3D[4],
+    verts3D[2],
     verts3D[3],
+
+    verts3D[4],
+    verts3D[3],
+    verts3D[1],
   ].flat().map(scaleToBottomLeft));
 
   // color
@@ -130,8 +139,7 @@ function main(): void {
     36, 133, 247, 255,
   ];
   const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
-  const allColors = [stellaColors, revalxColors, neoColors, botColors];
-  console.log(allColors);
+  const allColors = [stellaColors, revalxColors, neoColors, stellaColors, revalxColors, neoColors];
 
   const m4 = mat4.create();
   //#endregion
@@ -142,6 +150,8 @@ function main(): void {
   const resized = twgl.resizeCanvasToDisplaySize(canvas, window.devicePixelRatio);
   console.log(`Canvas ${resized ? 'was' : 'already'} resized to ${canvas.width}x${canvas.height}.`);
   gl.viewport(0, 0, canvas.width, canvas.height);
+  // enable culling and depth testing
+  gl.enable(gl.CULL_FACE | gl.DEPTH_TEST);
 
   // render loop
   function render(gl: WebGLRenderingContext, program: WebGLProgram) {
@@ -204,10 +214,12 @@ function main(): void {
         gl.enableVertexAttribArray(attrCol);
         gl.bindBuffer(gl.ARRAY_BUFFER, colBuffer);
         const colors = new Uint8Array([
-          allColors[Math.floor(elapsedTime + 0) % 4],
-          allColors[Math.floor(elapsedTime + 1) % 4],
-          allColors[Math.floor(elapsedTime + 2) % 4],
-          allColors[Math.floor(elapsedTime + 3) % 4],
+          allColors[Math.floor(elapsedTime + 0) % 6],
+          allColors[Math.floor(elapsedTime + 1) % 6],
+          allColors[Math.floor(elapsedTime + 2) % 6],
+          allColors[Math.floor(elapsedTime + 3) % 6],
+          allColors[Math.floor(elapsedTime + 4) % 6],
+          allColors[Math.floor(elapsedTime + 5) % 6],
         ].flat());
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(attrCol, 4, gl.UNSIGNED_BYTE, true, 0, 0);
@@ -219,10 +231,12 @@ function main(): void {
         gl.enableVertexAttribArray(attrColNext);
         gl.bindBuffer(gl.ARRAY_BUFFER, colNextBuffer);
         const colors = new Uint8Array([
-          allColors[Math.floor(elapsedTime + 1) % 4],
-          allColors[Math.floor(elapsedTime + 2) % 4],
-          allColors[Math.floor(elapsedTime + 3) % 4],
-          allColors[Math.floor(elapsedTime + 0) % 4],
+          allColors[Math.floor(elapsedTime + 1) % 6],
+          allColors[Math.floor(elapsedTime + 2) % 6],
+          allColors[Math.floor(elapsedTime + 3) % 6],
+          allColors[Math.floor(elapsedTime + 4) % 6],
+          allColors[Math.floor(elapsedTime + 5) % 6],
+          allColors[Math.floor(elapsedTime + 0) % 6],
         ].flat());
         gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
         gl.vertexAttribPointer(attrColNext, 4, gl.UNSIGNED_BYTE, true, 0, 0);
@@ -231,7 +245,7 @@ function main(): void {
       // do drawing
       gl.clearColor(1, 1, 1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.drawArrays(gl.TRIANGLES, 0, pos.length / 2);
+      gl.drawArrays(gl.TRIANGLES, 0, pos.length / 3);
 
       // recursively do render
       requestAnimationFrame(doRender)
