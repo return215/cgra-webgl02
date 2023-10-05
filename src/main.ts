@@ -1,10 +1,14 @@
 import vertProgram from "./main.vert";
 import fragProgram from "./main.frag";
 import * as twgl from "twgl.js";
-import { scaleToBottomLeft, showDecimalPoints } from "./utils";
-import { mat4 } from "gl-matrix";
+import { deg2Rad, scaleToBottomLeft, showDecimalPoints } from "./utils";
+import { mat4, vec3 } from "gl-matrix";
 
 type ShaderType = WebGLRenderingContext["VERTEX_SHADER"] | WebGLRenderingContext["FRAGMENT_SHADER"];
+
+/** ignore function return value */
+// @ts-ignore 6133 explicit ignore function return value
+let _ : unknown;
 
 function createShader(gl: WebGLRenderingContext, type: ShaderType, source: string)
   : WebGLShader | null {
@@ -90,11 +94,11 @@ function main(): void {
   //#region
   // position
   const verts3D = [
-    [4/8, 4/8, 7/8,],
-    [1/8, 1/8, 4/8,],
-    [7/8, 1/8, 4/8,],
     [4/8, 7/8, 4/8,],
-    [4/8, 4/8, 1/8,],
+    [1/8, 4/8, 1/8,],
+    [7/8, 4/8, 1/8,],
+    [4/8, 4/8, 7/8,],
+    [4/8, 1/8, 4/8,],
   ]
   const pos = new Float32Array([
     verts3D[0],
@@ -138,20 +142,22 @@ function main(): void {
     36, 238, 247, 255,
     36, 133, 247, 255,
   ];
-  const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
+  // const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
   const allColors = [stellaColors, revalxColors, neoColors, stellaColors, revalxColors, neoColors];
 
-  const m4 = mat4.create();
+  
   //#endregion
 
   // --- RENDERING --- //
 
   // prepare for rendering
+  const canvasAspectRatio = canvas.width / canvas.height;
   const resized = twgl.resizeCanvasToDisplaySize(canvas, window.devicePixelRatio);
   console.log(`Canvas ${resized ? 'was' : 'already'} resized to ${canvas.width}x${canvas.height}.`);
   gl.viewport(0, 0, canvas.width, canvas.height);
   // enable culling and depth testing
-  gl.enable(gl.CULL_FACE | gl.DEPTH_TEST);
+  gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
 
   // render loop
   function render(gl: WebGLRenderingContext, program: WebGLProgram) {
@@ -163,6 +169,15 @@ function main(): void {
     const posBuffer = gl.createBuffer()!!;
     const colBuffer = gl.createBuffer()!!;
     const colNextBuffer = gl.createBuffer()!!;
+    const m4Proj = mat4.create();
+    const m4view = mat4.create();
+    const m4viewProj = mat4.create();
+
+    const attrPos = gl.getAttribLocation(program, "a_Pos");
+    const attrCol = gl.getAttribLocation(program, "a_Col");
+    const attrColNext = gl.getAttribLocation(program, "a_ColNext");
+    const unifViewProj = gl.getUniformLocation(program, "u_ViewProj")!!;
+    const unifTime = gl.getUniformLocation(program, "u_Time")!!;
 
     return function doRender() {
       // initialize time if haven't
@@ -170,7 +185,7 @@ function main(): void {
         previousTime = startTime = performance.now();
       }
 
-      // set time
+      // set time scale uniform
       {
         const currentTime = performance.now();
         elapsedTime += ((currentTime - previousTime) / 1000.0) * timeScale; // Convert to seconds
@@ -190,57 +205,70 @@ function main(): void {
         else
           timeScale *= 100 / 99;
 
-        const unifTime = gl.getUniformLocation(program, "u_Time");
         gl.uniform1f(unifTime, elapsedTime);
       }
 
-      // set positions
-      {
-        const attrPos = gl.getAttribLocation(program, "a_Pos");
-        gl.enableVertexAttribArray(attrPos);
-        gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
-        gl.vertexAttribPointer(attrPos, 2, gl.FLOAT, false, 0, 0);
-      }
+      // set positions buffer
+      gl.enableVertexAttribArray(attrPos);
+      gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+      gl.vertexAttribPointer(attrPos, 2, gl.FLOAT, false, 0, 0);
 
-      // set colors
+      // set colors buffer
       /* 
       tri0 : 0 -> 1 -> 2 -> 0
       tri1 : 1 -> 2 -> 0 -> 1
       tri2 : 2 -> 0 -> 1 -> 2
       */
-      {
-        const attrCol = gl.getAttribLocation(program, "a_Col");
-        gl.enableVertexAttribArray(attrCol);
-        gl.bindBuffer(gl.ARRAY_BUFFER, colBuffer);
-        const colors = new Uint8Array([
-          allColors[Math.floor(elapsedTime + 0) % 6],
-          allColors[Math.floor(elapsedTime + 1) % 6],
-          allColors[Math.floor(elapsedTime + 2) % 6],
-          allColors[Math.floor(elapsedTime + 3) % 6],
-          allColors[Math.floor(elapsedTime + 4) % 6],
-          allColors[Math.floor(elapsedTime + 5) % 6],
-        ].flat());
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(attrCol, 4, gl.UNSIGNED_BYTE, true, 0, 0);
-      }
+      gl.enableVertexAttribArray(attrCol);
+      gl.bindBuffer(gl.ARRAY_BUFFER, colBuffer);
+      const colors = new Uint8Array([
+        allColors[Math.floor(elapsedTime + 0) % 6],
+        allColors[Math.floor(elapsedTime + 1) % 6],
+        allColors[Math.floor(elapsedTime + 2) % 6],
+        allColors[Math.floor(elapsedTime + 3) % 6],
+        allColors[Math.floor(elapsedTime + 4) % 6],
+        allColors[Math.floor(elapsedTime + 5) % 6],
+      ].flat());
+      gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(attrCol, 4, gl.UNSIGNED_BYTE, true, 0, 0);
 
-      // set next colors
-      {
-        const attrColNext = gl.getAttribLocation(program, "a_ColNext");
-        gl.enableVertexAttribArray(attrColNext);
-        gl.bindBuffer(gl.ARRAY_BUFFER, colNextBuffer);
-        const colors = new Uint8Array([
-          allColors[Math.floor(elapsedTime + 1) % 6],
-          allColors[Math.floor(elapsedTime + 2) % 6],
-          allColors[Math.floor(elapsedTime + 3) % 6],
-          allColors[Math.floor(elapsedTime + 4) % 6],
-          allColors[Math.floor(elapsedTime + 5) % 6],
-          allColors[Math.floor(elapsedTime + 0) % 6],
-        ].flat());
-        gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(attrColNext, 4, gl.UNSIGNED_BYTE, true, 0, 0);
+      // set next colors buffer
+      gl.enableVertexAttribArray(attrColNext);
+      gl.bindBuffer(gl.ARRAY_BUFFER, colNextBuffer);
+      const nextColors = new Uint8Array([
+        allColors[Math.floor(elapsedTime + 1) % 6],
+        allColors[Math.floor(elapsedTime + 2) % 6],
+        allColors[Math.floor(elapsedTime + 3) % 6],
+        allColors[Math.floor(elapsedTime + 4) % 6],
+        allColors[Math.floor(elapsedTime + 5) % 6],
+        allColors[Math.floor(elapsedTime + 0) % 6],
+      ].flat());
+      gl.bufferData(gl.ARRAY_BUFFER, nextColors, gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(attrColNext, 4, gl.UNSIGNED_BYTE, true, 0, 0);
+
+      // set projection
+      const projData = {
+        fieldOfView: deg2Rad(70),
+        aspect: canvasAspectRatio,
+        near: 0.1,
+        far: 100,
+      };
+      _ = mat4.perspective(m4Proj, projData.fieldOfView, projData.aspect, projData.near, projData.far);
+
+      // set view
+      const viewData = {
+        cameraPosition: vec3.fromValues(0, 0, 10),
+        target: vec3.fromValues(0, 0, 0),
+        up: vec3.fromValues(0, 1, 0),
       }
+      _ = mat4.lookAt(m4view, viewData.cameraPosition, viewData.target, viewData.up);
+
+      // set view projection
+      _ = mat4.multiply(m4viewProj, m4view, m4Proj);
+
+      // set view projection uniform
+      gl.uniformMatrix4fv(unifViewProj, false, m4viewProj);
 
       // do drawing
       gl.clearColor(1, 1, 1, 1);
