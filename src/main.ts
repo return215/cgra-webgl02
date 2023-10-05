@@ -125,7 +125,7 @@ function main(): void {
     verts3D[4],
     verts3D[3],
     verts3D[1],
-  ].flat().map(scaleToBottomLeft));
+  ].flat().map(convertCornerToCenter));
 
   // color
   const stellaColors = [
@@ -146,7 +146,6 @@ function main(): void {
   // const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
   const allColors = [stellaColors, revalxColors, neoColors, stellaColors, revalxColors, neoColors];
 
-  
   //#endregion
 
   // --- RENDERING --- //
@@ -157,7 +156,7 @@ function main(): void {
   console.log(`Canvas ${resized ? 'was' : 'already'} resized to ${canvas.width}x${canvas.height}.`);
   gl.viewport(0, 0, canvas.width, canvas.height);
   // enable culling and depth testing
-  gl.enable(gl.CULL_FACE);
+  // gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
   // render loop
@@ -172,13 +171,18 @@ function main(): void {
     const colNextBuffer = gl.createBuffer()!!;
     const m4Proj = mat4.create();
     const m4view = mat4.create();
-    const m4viewProj = mat4.create();
 
     const attrPos = gl.getAttribLocation(program, "a_Pos");
     const attrCol = gl.getAttribLocation(program, "a_Col");
     const attrColNext = gl.getAttribLocation(program, "a_ColNext");
     const unifViewProj = gl.getUniformLocation(program, "u_ViewProj")!!;
     const unifTime = gl.getUniformLocation(program, "u_Time")!!;
+
+    // set positions buffer
+    gl.enableVertexAttribArray(attrPos);
+    gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
+    gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
 
     return function doRender() {
       // initialize time if haven't
@@ -187,33 +191,26 @@ function main(): void {
       }
 
       // set time scale uniform
-      {
-        const currentTime = performance.now();
-        elapsedTime += ((currentTime - previousTime) / 1000.0) * timeScale; // Convert to seconds
-        previousTime = currentTime;
-        if (timeScaleElem)
-          timeScaleElem.textContent = `
-            Time scale = ${showDecimalPoints(timeScale)} |
-            Current time = ${showDecimalPoints((currentTime - startTime) / 1000.0)}
-          `;
+      const currentTime = performance.now();
+      elapsedTime += ((currentTime - previousTime) / 1000.0) * timeScale; // Convert to seconds
+      previousTime = currentTime;
+      if (timeScaleElem)
+        timeScaleElem.textContent = `
+          Time scale = ${showDecimalPoints(timeScale)} |
+          Current time = ${showDecimalPoints((currentTime - startTime) / 1000.0)}
+        `;
 
-        // scale time
-        if (timeScale < 2 / 10 || timeScale > 10 / 2)
-          shrinkTimeScale = !shrinkTimeScale;
+      // scale time
+      if (timeScale < 2 / 10 || timeScale > 10 / 2)
+        shrinkTimeScale = !shrinkTimeScale;
 
-        if (shrinkTimeScale)
-          timeScale *= 99 / 100;
-        else
-          timeScale *= 100 / 99;
+      if (shrinkTimeScale)
+        timeScale *= 99 / 100;
+      else
+        timeScale *= 100 / 99;
 
-        gl.uniform1f(unifTime, elapsedTime);
-      }
+      gl.uniform1f(unifTime, elapsedTime);
 
-      // set positions buffer
-      gl.enableVertexAttribArray(attrPos);
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
-      gl.vertexAttribPointer(attrPos, 2, gl.FLOAT, false, 0, 0);
 
       // set colors buffer
       /* 
@@ -250,7 +247,7 @@ function main(): void {
 
       // set projection
       const projData = {
-        fieldOfView: deg2Rad(70),
+        fieldOfView: deg2Rad(120),
         aspect: canvasAspectRatio,
         near: 0.1,
         far: 100,
@@ -259,13 +256,20 @@ function main(): void {
 
       // set view
       const viewData = {
-        cameraPosition: vec3.fromValues(0, 0, 10),
+        cameraPosition: vec3.fromValues(1, 0, 0),
         target: vec3.fromValues(0, 0, 0),
         up: vec3.fromValues(0, 1, 0),
       }
       _ = mat4.lookAt(m4view, viewData.cameraPosition, viewData.target, viewData.up);
+      _ = mat4.rotateY(m4view, m4view, deg2Rad(30));
+      _ = mat4.rotateX(m4view, m4view, deg2Rad(-30));
+      // _ = mat4.tr
 
       // set view projection
+      /** view projection matrix
+       * defined here to avoid recalculating previous state
+       */
+      const m4viewProj = mat4.create();
       _ = mat4.multiply(m4viewProj, m4view, m4Proj);
 
       // set view projection uniform
