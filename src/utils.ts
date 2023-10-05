@@ -9,3 +9,6 @@ export const showDecimalPoints = (n: number, d: number = 2) => ((Math.round(n * 
 
 /** rotate array by n index */
 export const rotateArray = (array: number[], n: number) => array.slice(n).concat(array.slice(0, n));
+
+/** convert degree to radiant */
+export const deg2Rad = (degrees: number) => (degrees * Math.PI) / 180;
