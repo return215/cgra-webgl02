@@ -94,37 +94,67 @@ function main(): void {
   //#region
   // position
   const verts3D = [
-    [0.5, 0.0, 0.5],
-    [0.0, 0.5, 0.0],
-    [1.0, 0.5, 0.0],
-    [0.5, 0.5, 1.0],
-    [0.5, 1.0, 0.5],
+    // from bottom left front to top right back
+    [0, 0, 0],
+    [0, 0, 1],
+    [0, 1, 0],
+    [0, 1, 1],
+    [1, 0, 0],
+    [1, 0, 1],
+    [1, 1, 0],
+    [1, 1, 1],
   ];
 
+  // create a cube from the vertices above
   const pos = new Float32Array([
+    // left face
     verts3D[0],
     verts3D[1],
     verts3D[2],
+    verts3D[3],
+    verts3D[1],
+    verts3D[2],
 
+    // back face
+    verts3D[3],
+    verts3D[7],
+    verts3D[1],
+    verts3D[5],
+    verts3D[7],
+    verts3D[1],
+
+    // top face
+    verts3D[6],
+    verts3D[7],
+    verts3D[2],
+    verts3D[3],
+    verts3D[7],
+    verts3D[2],
+
+    // right face
+    verts3D[4],
+    verts3D[5],
+    verts3D[6],
+    verts3D[7],
+    verts3D[5],
+    verts3D[6],
+
+    // front face
     verts3D[0],
+    verts3D[4],
     verts3D[2],
-    verts3D[3],
+    verts3D[6],
+    verts3D[4],
+    verts3D[2],
 
+    // bottom face
     verts3D[0],
-    verts3D[3],
     verts3D[1],
-
     verts3D[4],
+    verts3D[5],
     verts3D[1],
-    verts3D[2],
-
     verts3D[4],
-    verts3D[2],
-    verts3D[3],
 
-    verts3D[4],
-    verts3D[3],
-    verts3D[1],
   ].flat().map(convertCornerToCenter));
 
   // color
@@ -144,7 +174,11 @@ function main(): void {
     36, 133, 247, 255,
   ];
   // const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
-  const allColors = [stellaColors, revalxColors, neoColors, stellaColors, revalxColors, neoColors];
+  const allColors = [
+    stellaColors, 
+    revalxColors, 
+    neoColors, 
+    ];
 
   //#endregion
 
@@ -221,12 +255,18 @@ function main(): void {
       gl.enableVertexAttribArray(attrCol);
       gl.bindBuffer(gl.ARRAY_BUFFER, colBuffer);
       const colors = new Uint8Array([
-        allColors[Math.floor(elapsedTime + 0) % 6],
-        allColors[Math.floor(elapsedTime + 1) % 6],
-        allColors[Math.floor(elapsedTime + 2) % 6],
-        allColors[Math.floor(elapsedTime + 3) % 6],
-        allColors[Math.floor(elapsedTime + 4) % 6],
-        allColors[Math.floor(elapsedTime + 5) % 6],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
       ].flat());
       gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(attrCol, 4, gl.UNSIGNED_BYTE, true, 0, 0);
@@ -235,12 +275,18 @@ function main(): void {
       gl.enableVertexAttribArray(attrColNext);
       gl.bindBuffer(gl.ARRAY_BUFFER, colNextBuffer);
       const nextColors = new Uint8Array([
-        allColors[Math.floor(elapsedTime + 1) % 6],
-        allColors[Math.floor(elapsedTime + 2) % 6],
-        allColors[Math.floor(elapsedTime + 3) % 6],
-        allColors[Math.floor(elapsedTime + 4) % 6],
-        allColors[Math.floor(elapsedTime + 5) % 6],
-        allColors[Math.floor(elapsedTime + 0) % 6],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
+        allColors[Math.floor(elapsedTime + 1) % 3],
+        allColors[Math.floor(elapsedTime + 2) % 3],
+        allColors[Math.floor(elapsedTime + 0) % 3],
       ].flat());
       gl.bufferData(gl.ARRAY_BUFFER, nextColors, gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(attrColNext, 4, gl.UNSIGNED_BYTE, true, 0, 0);
