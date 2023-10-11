@@ -247,17 +247,21 @@ function main(): void {
 
       // set projection
       const projData = {
-        fieldOfView: deg2Rad(120),
+        fieldOfView: deg2Rad(80),
         aspect: canvasAspectRatio,
         near: 0.1,
         far: 100,
       };
       _ = mat4.perspective(m4Proj, projData.fieldOfView, projData.aspect, projData.near, projData.far);
 
+      // cycle x between -1 to 1 using trigonometry
+      const x = Math.sin(elapsedTime)*1.10;
+      const z = Math.cos(elapsedTime)*1.10;
+
       // set view
       const viewData = {
-        cameraPosition: vec3.fromValues(1, 0, 0),
-        target: vec3.fromValues(0, 0, 0),
+        cameraPosition: vec3.fromValues(x, 1.20, z),
+        target: vec3.fromValues(0.00, 0.00, 0.00),
         up: vec3.fromValues(0, 1, 0),
       }
       _ = mat4.lookAt(m4view, viewData.cameraPosition, viewData.target, viewData.up);
