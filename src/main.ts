@@ -173,12 +173,11 @@ function main(): void {
     36, 238, 247, 255,
     36, 133, 247, 255,
   ];
-  // const botColors = [stellaColors.slice(4,8), revalxColors.slice(4,8), neoColors.slice(4,8)].flat();
   const allColors = [
     stellaColors, 
     revalxColors, 
     neoColors, 
-    ];
+  ];
 
   //#endregion
 
@@ -209,14 +208,88 @@ function main(): void {
     const attrPos = gl.getAttribLocation(program, "a_Pos");
     const attrCol = gl.getAttribLocation(program, "a_Col");
     const attrColNext = gl.getAttribLocation(program, "a_ColNext");
-    const unifViewProj = gl.getUniformLocation(program, "u_ViewProj")!!;
-    const unifTime = gl.getUniformLocation(program, "u_Time")!!;
+    const unifViewProj = gl.getUniformLocation(program, "u_ViewProj");
+    const unifTime = gl.getUniformLocation(program, "u_Time");
 
     // set positions buffer
     gl.enableVertexAttribArray(attrPos);
     gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, pos, gl.STATIC_DRAW);
     gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
+
+    // set initial camera position
+    const cameraFov = 80;
+    const cameraPosition = vec3.fromValues(1, 1, 1);
+    const cameraLookAt = vec3.fromValues(0, 0, 0);
+
+    // set projection
+    const projData = {
+      fieldOfView: deg2Rad(cameraFov),
+      aspect: canvasAspectRatio,
+      near: 0.0001,
+      far: 1000,
+    };
+    _ = mat4.perspective(m4Proj, projData.fieldOfView, projData.aspect, projData.near, projData.far);
+
+    // set view
+    const viewData = {
+      cameraPosition: cameraPosition,
+      target: cameraLookAt,
+      up: vec3.fromValues(0, 1, 0),
+    }
+    _ = mat4.lookAt(m4view, viewData.cameraPosition, viewData.target, viewData.up);
+
+    // set view projection
+    /** view projection matrix
+     * defined here to avoid recalculating previous state
+     */
+    const m4viewProj = mat4.create();
+    _ = mat4.multiply(m4viewProj, m4view, m4Proj);
+
+    // add key listener
+    document.addEventListener("keydown", (e) => {
+      switch(e.key) {
+        // WASD for camera movement on X and Z
+        case "w":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0, 0.01));
+          break;
+        case "s":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0, -0.01));
+          break;
+        case "a":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(-0.01, 0, 0));
+          break;
+        case "d":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0.01, 0, 0));
+          break;
+    
+        // IJKL for camera rotation along X and Y
+        case "i":
+          _ = mat4.rotateX(m4viewProj, m4viewProj, deg2Rad(1));
+          break;
+        case "k":
+          _ = mat4.rotateX(m4viewProj, m4viewProj, deg2Rad(-1));
+          break;
+        case "j":
+          _ = mat4.rotateY(m4viewProj, m4viewProj, deg2Rad(1));
+          break;
+        case "l":
+          _ = mat4.rotateY(m4viewProj, m4viewProj, deg2Rad(-1));
+          break;
+        // P and ; for camera movement on Y
+        case "p":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0.01, 0));
+          break;
+        case ";":
+          _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, -0.01, 0));
+          break;
+        // [ and ' for camera FOV incease or decrease
+
+        case "Enter":
+          console.log(m4viewProj);
+      }
+    });
+    
 
     return function doRender() {
       // initialize time if haven't
@@ -243,8 +316,8 @@ function main(): void {
       else
         timeScale *= 100 / 99;
 
-      gl.uniform1f(unifTime, elapsedTime);
-
+      if (unifTime)
+        gl.uniform1f(unifTime, elapsedTime);
 
       // set colors buffer
       /* 
@@ -291,39 +364,11 @@ function main(): void {
       gl.bufferData(gl.ARRAY_BUFFER, nextColors, gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(attrColNext, 4, gl.UNSIGNED_BYTE, true, 0, 0);
 
-      // set projection
-      const projData = {
-        fieldOfView: deg2Rad(80),
-        aspect: canvasAspectRatio,
-        near: 0.1,
-        far: 100,
-      };
-      _ = mat4.perspective(m4Proj, projData.fieldOfView, projData.aspect, projData.near, projData.far);
 
-      // cycle x between -1 to 1 using trigonometry
-      const x = Math.sin(elapsedTime)*1.10;
-      const z = Math.cos(elapsedTime)*1.10;
-
-      // set view
-      const viewData = {
-        cameraPosition: vec3.fromValues(x, 1.20, z),
-        target: vec3.fromValues(0.00, 0.00, 0.00),
-        up: vec3.fromValues(0, 1, 0),
-      }
-      _ = mat4.lookAt(m4view, viewData.cameraPosition, viewData.target, viewData.up);
-      _ = mat4.rotateY(m4view, m4view, deg2Rad(30));
-      _ = mat4.rotateX(m4view, m4view, deg2Rad(-30));
-      // _ = mat4.tr
-
-      // set view projection
-      /** view projection matrix
-       * defined here to avoid recalculating previous state
-       */
-      const m4viewProj = mat4.create();
-      _ = mat4.multiply(m4viewProj, m4view, m4Proj);
 
       // set view projection uniform
-      gl.uniformMatrix4fv(unifViewProj, false, m4viewProj);
+      if (unifViewProj)
+        gl.uniformMatrix4fv(unifViewProj, false, m4viewProj);
 
       // do drawing
       gl.clearColor(1, 1, 1, 1);
