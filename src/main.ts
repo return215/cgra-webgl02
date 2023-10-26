@@ -218,7 +218,7 @@ function main(): void {
     gl.vertexAttribPointer(attrPos, 3, gl.FLOAT, false, 0, 0);
 
     // set initial camera position
-    const cameraFov = 80;
+    let cameraFov = 80;
     const cameraPosition = vec3.fromValues(1, 1, 1);
     const cameraLookAt = vec3.fromValues(0, 0, 0);
 
@@ -248,42 +248,48 @@ function main(): void {
 
     // add key listener
     document.addEventListener("keydown", (e) => {
-      switch(e.key) {
+      switch(e.code) {
         // WASD for camera movement on X and Z
-        case "w":
+        case "KeyW":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0, 0.01));
           break;
-        case "s":
+        case "KeyS":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0, -0.01));
           break;
-        case "a":
+        case "KeyA":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(-0.01, 0, 0));
           break;
-        case "d":
+        case "KeyD":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0.01, 0, 0));
           break;
     
         // IJKL for camera rotation along X and Y
-        case "i":
+        case "KeyI":
           _ = mat4.rotateX(m4viewProj, m4viewProj, deg2Rad(1));
           break;
-        case "k":
+        case "KeyK":
           _ = mat4.rotateX(m4viewProj, m4viewProj, deg2Rad(-1));
           break;
-        case "j":
+        case "KeyJ":
           _ = mat4.rotateY(m4viewProj, m4viewProj, deg2Rad(1));
           break;
-        case "l":
+        case "KeyL":
           _ = mat4.rotateY(m4viewProj, m4viewProj, deg2Rad(-1));
           break;
         // P and ; for camera movement on Y
-        case "p":
+        case "KeyP":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, 0.01, 0));
           break;
-        case ";":
+        case "Semicolon":
           _ = mat4.translate(m4viewProj, m4viewProj, vec3.fromValues(0, -0.01, 0));
           break;
         // [ and ' for camera FOV incease or decrease
+        case "BracketLeft":
+          cameraFov -= 0.5;
+          break;
+        case "BracketRight":
+          cameraFov += 0.5;
+          break;
 
         case "Enter":
           console.log(m4viewProj);
